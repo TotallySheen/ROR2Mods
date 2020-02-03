@@ -1,6 +1,6 @@
 {
     "name": "BossItemDrop",
-    "version_number": "1.0.0",
+    "version_number": "1.1.0",
     "website_url": "https://github.com/TotallySheen/ROR2Mods/tree/master/BossItemDrop",
     "description": "Adds a chance for boss-type enemies to drop their boss items upon death.",
     "dependencies": [

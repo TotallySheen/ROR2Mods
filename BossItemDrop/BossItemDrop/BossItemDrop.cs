@@ -8,7 +8,7 @@ using BepInEx.Configuration;
 
 namespace BossItemDrop
 {
-    [BepInPlugin("com.sheen.BossItemDrop", "Boss Item Drop", "1.0.0")]
+    [BepInPlugin("com.sheen.BossItemDrop", "Boss Item Drop", "1.1.0")]
     public class BossItemDrop : BaseUnityPlugin
     {
         // configurable stuff
@@ -18,6 +18,8 @@ namespace BossItemDrop
         public static ConfigEntry<bool> dropFromTeleBoss { get; set; }
         public static ConfigEntry<bool> allowNonStandardDrops { get; set; }
         public static ConfigEntry<bool> dropForEachPlayer { get; set; }
+        public static ConfigEntry<int> scaleDropPerStage { get; set; }
+        public static ConfigEntry<float> perStageIncrement { get; set; }
 
         public void Awake()
         {
@@ -39,6 +41,18 @@ namespace BossItemDrop
                 "eliteMultiplier",
                 2,
                 "The multiplier applied to the drop chance if the boss is elite. Has no effect if eliteMultiplyChance is false."
+                );
+            scaleDropPerStage = Config.Bind<int>(
+                "Drop Chances",
+                "scaleDropRatePerStageMode",
+                0,
+                "Determines if and how the drop rate changes with each stage. 0 = no change, 1 = increase, 2 = decrease"
+                );
+            perStageIncrement = Config.Bind<float>(
+                "Drop Chances",
+                "perStageIncrement",
+                0.1f,
+                "The increment applied to the base drop rate after each stage. Its effect is dependent on scaleDropRatePerStageMode's value"
                 );
             dropFromTeleBoss = Config.Bind<bool>(
                 "Drop Logistics",
@@ -124,6 +138,17 @@ namespace BossItemDrop
 
             // determining the drop chance
             float dropChance = baseDropChance.Value;
+
+            if (scaleDropPerStage.Value == 1)
+            {
+                dropChance += perStageIncrement.Value * Run.instance.stageClearCount;
+            }
+
+            else if (scaleDropPerStage.Value == 2)
+            {
+                dropChance -= perStageIncrement.Value * Run.instance.stageClearCount;
+                if (dropChance <= 0) dropChance = 0;
+            }
 
             if (enemy.isElite && eliteMultChance.Value)
             {

@@ -5,7 +5,9 @@ This mod adds a chance for Boss tier items to drop from their corresponding boss
 Copy the `BossItemDrop.dll` to your BepInEx plugins directory.
 
 ## Feedback
-Any and all feedback is appreciated, as this is my first time making a mod for this game. Best way to reach me is `@sheen#6867` on Discord
+Any and all feedback is appreciated, as this is my first time making a mod for this game.
+
+I've set up a simple Discord server to take feedback for my mods, found at [https://discord.gg/nfhzJad](https://discord.gg/nfhzJad)
 
 ## Item Drop Table
 | Boss | Item | Standard Drop? |
@@ -23,5 +25,8 @@ Any and all feedback is appreciated, as this is my first time making a mod for t
 | Alloy Worship Unit | Irradiant Pearl | No |
 
 ## Changelog
+### 1.1.0
+ - Added config options for incrementing drop rates with each stage
+ - Updated this readme with discord server
 ### 1.0.0
  - Initial Release
