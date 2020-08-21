@@ -16,15 +16,20 @@ I've set up a simple Discord server to take feedback for my mods, found at [http
 | Stone Titan | Titanic Knurl | Yes |
 | Wandering Vagrant | Genesis Loop | Yes |
 | Grovetender | The Little Disciple | Yes |
+| Magma Worm | Molten Perforator | Yes |
 | Magma Worm | Ifrit's Distinction | No |
+| Overloading Worm | Molten Perforator | Yes |
 | Overloading Worm | Silence Between Two Strikes | No |
-| Clay Dunestrider | Pearl | No |
-| Imp Overlord | Pearl | No |
+| Clay Dunestrider | Mired Urn | Yes |
+| Imp Overlord | Shatterspleen | Yes |
 | Solus Control Unit | Pearl | No |
 | Scavenger | Irradiant Pearl | No |
 | Alloy Worship Unit | Irradiant Pearl | No |
 
 ## Changelog
+### 1.2.0
+ - Updated for 1.0 release
+ - Added config options for sacrifice interactions and extra aspect equipment drops
 ### 1.1.0
  - Added config options for incrementing drop rates with each stage
  - Updated this readme with discord server

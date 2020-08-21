@@ -5,10 +5,12 @@ using UnityEngine;
 using UnityEngine.Events;
 using System.Collections;
 using BepInEx.Configuration;
+using RoR2.Artifacts;
+
 
 namespace BossItemDrop
 {
-    [BepInPlugin("com.sheen.BossItemDrop", "Boss Item Drop", "1.1.0")]
+    [BepInPlugin("com.sheen.BossItemDrop", "Boss Item Drop", "1.2.0")]
     public class BossItemDrop : BaseUnityPlugin
     {
         // configurable stuff
@@ -20,6 +22,9 @@ namespace BossItemDrop
         public static ConfigEntry<bool> dropForEachPlayer { get; set; }
         public static ConfigEntry<int> scaleDropPerStage { get; set; }
         public static ConfigEntry<float> perStageIncrement { get; set; }
+        public static ConfigEntry<bool> allowExtraAspectDrops { get; set; }
+        public static ConfigEntry<bool> onlyDropWithSacrifice { get; set; }
+        public static ConfigEntry<bool> useSacrificeDropChance { get; set; }
 
         public void Awake()
         {
@@ -54,6 +59,18 @@ namespace BossItemDrop
                 0.1f,
                 "The increment applied to the base drop rate after each stage. Its effect is dependent on scaleDropRatePerStageMode's value"
                 );
+            onlyDropWithSacrifice = Config.Bind<bool>(
+                "Drop Chances",
+                "onlyDropWithSacrificeEnabled",
+                false,
+                "Determines if extra boss item drops should be restricted to runs in which the Sacrifice artifact is enabled."
+                );
+            useSacrificeDropChance = Config.Bind<bool>(
+                "Drop Chances",
+                "useSacrificeDropChance",
+                false,
+                "If enabled, all drop chance calculation will be ignored, and the drop rates for enemies while using sacrifice will be used instead."
+                );
             dropFromTeleBoss = Config.Bind<bool>(
                 "Drop Logistics",
                 "dropFromTeleBoss",
@@ -71,6 +88,12 @@ namespace BossItemDrop
                 "dropForEachPlayer",
                 true,
                 "Determines if an item should drop for each player, or if only one item should drop per kill."
+                );
+            allowExtraAspectDrops = Config.Bind<bool>(
+                "Drop Logistics",
+                "allowExtraAspectDrops",
+                false,
+                "Determines if Aspect Items (i.e. Ifrit's Distinction) have an increased drop rate on boss enemies of that elite type."
                 );
 
             On.RoR2.GlobalEventManager.OnCharacterDeath += (orig, self, damageReport) =>
@@ -95,64 +118,94 @@ namespace BossItemDrop
                 return;
             }
 
+            // exiting early if non-sacrifice drops are disabled, and the artifact is not on
+            if (onlyDropWithSacrifice.Value && !RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.sacrificeArtifactDef))
+            {
+                return;
+            }
+
             ItemIndex itemToDrop = ItemIndex.Count;
             EquipmentIndex equipToDrop = EquipmentIndex.Count;
 
             int players = Run.instance.participatingPlayerCount;
 
+            // checking if extra elite aspects should drop
+            if (enemy.isElite && allowExtraAspectDrops.Value)
+            {
+                equipToDrop = enemy.equipmentSlot.equipmentIndex;
+            }
+
             // determining the item to drop
             switch (enemyBodyIndex)
             {
-                case 79:    // Wandering Vagrant
-                    itemToDrop = ItemIndex.NovaOnLowHealth;     // Genesis Loop
+                case 93:    // Wandering Vagrant
+                    itemToDrop = ItemIndex.NovaOnLowHealth;         // Genesis Loop
                     break;
-                case 73:    // Stone Titan
-                    itemToDrop = ItemIndex.Knurl;               // Titanic Knurl
+                case 87:    // Stone Titan
+                    itemToDrop = ItemIndex.Knurl;                   // Titanic Knurl
                     break;
-                case 10:    // Beetle Queen
-                    itemToDrop = ItemIndex.BeetleGland;         // Queen's Gland
+                case 13:    // Beetle Queen
+                    itemToDrop = ItemIndex.BeetleGland;             // Queen's Gland
                     break;
-                case 36:    // Grovetender
-                    itemToDrop = ItemIndex.SprintWisp;          // The Little Disciple
+                case 45:    // Grovetender
+                    itemToDrop = ItemIndex.SprintWisp;              // The Little Disciple
                     break;
-                case 49:    // Magma Worm
+                case 60:    // Magma Worm
+                    itemToDrop = ItemIndex.FireballsOnHit;          // Molten Perforator
                     if (allowNonStandardDrops.Value)
-                        equipToDrop = EquipmentIndex.AffixRed;  // Ifrit's Distinction
+                        equipToDrop = EquipmentIndex.AffixRed;      // Ifrit's Distinction
                     break;
-                case 23:    // Overloading Worm
+                case 31:    // Overloading Worm
+                    itemToDrop = ItemIndex.FireballsOnHit;          // Molten Perforator
                     if (allowNonStandardDrops.Value)
-                        equipToDrop = EquipmentIndex.AffixBlue; // Silence Between Two Strikes
+                        equipToDrop = EquipmentIndex.AffixBlue;     // Silence Between Two Strikes
                     break;
-                case 43:    // Imp Overlord
-                case 16:    // Clay Dunestrider
-                case 58:    // Solus Control Unit
-                    if (allowNonStandardDrops.Value)
-                        itemToDrop = ItemIndex.Pearl;           // Pearl
+                case 52:    // Imp Overlord
+                    itemToDrop = ItemIndex.BleedOnHitAndExplode;    // Shatterspleen
                     break;
-                case 60:    // Scavenger
-                case 71:    // Alloy Worship Unit
+                case 24:    // Clay Dunestrider
+                    itemToDrop = ItemIndex.SiphonOnLowHealth;       // Mired Urn
+                    break;
+                case 72:    // Solus Control Unit
                     if (allowNonStandardDrops.Value)
-                        itemToDrop = ItemIndex.ShinyPearl;      // Irradiant Pearl
+                        itemToDrop = ItemIndex.Pearl;               // Pearl
+                    break;
+                case 74:    // Scavenger
+                case 85:    // Alloy Worship Unit
+                    if (allowNonStandardDrops.Value)
+                        itemToDrop = ItemIndex.ShinyPearl;          // Irradiant Pearl
+                    break;
+                default:    // Catching any unincluded enemies
+                    itemToDrop = ItemIndex.Count;
+                    equipToDrop = EquipmentIndex.Count;
                     break;
             }
 
             // determining the drop chance
-            float dropChance = baseDropChance.Value;
-
-            if (scaleDropPerStage.Value == 1)
+            float dropChance = 0;
+            if (useSacrificeDropChance.Value)
             {
-                dropChance += perStageIncrement.Value * Run.instance.stageClearCount;
+                dropChance = Util.GetExpAdjustedDropChancePercent(5f, damageReport.victim.gameObject);
             }
-
-            else if (scaleDropPerStage.Value == 2)
+            else
             {
-                dropChance -= perStageIncrement.Value * Run.instance.stageClearCount;
-                if (dropChance <= 0) dropChance = 0;
-            }
+                dropChance = baseDropChance.Value;
 
-            if (enemy.isElite && eliteMultChance.Value)
-            {
-                dropChance *= eliteMultiplier.Value;
+                if (scaleDropPerStage.Value == 1)
+                {
+                    dropChance += perStageIncrement.Value * Run.instance.stageClearCount;
+                }
+
+                else if (scaleDropPerStage.Value == 2)
+                {
+                    dropChance -= perStageIncrement.Value * Run.instance.stageClearCount;
+                    if (dropChance <= 0) dropChance = 0;
+                }
+
+                if (enemy.isElite && eliteMultChance.Value)
+                {
+                    dropChance *= eliteMultiplier.Value;
+                }
             }
 
             bool doDrop = Util.CheckRoll(dropChance, killerMaster);
