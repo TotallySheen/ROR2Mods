@@ -1,0 +1,9 @@
+{
+    "name": "EclipseMultiplayer",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/TotallySheen/ROR2Mods/tree/master/EclipseMultiplayer",
+    "description": "A simple mod that adds all 8 Eclipse difficulties to the standard difficulty pool for use in multiplayer.",
+    "dependencies": [
+        "bbepis-BepInExPack-5.3.1"
+    ]
+}
