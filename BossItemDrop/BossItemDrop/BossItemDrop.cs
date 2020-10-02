@@ -6,13 +6,22 @@ using UnityEngine.Events;
 using System.Collections;
 using BepInEx.Configuration;
 using RoR2.Artifacts;
+using R2API;
+using R2API.Utils;
 
 
 namespace BossItemDrop
 {
-    [BepInPlugin("com.sheen.BossItemDrop", "Boss Item Drop", "1.2.0")]
+    [BepInDependency("com.bepis.r2api", "2.5.14")]
+    [BepInPlugin("com.sheen.BossItemDrop", "Boss Item Drop", "1.2.2")]
+    [NetworkCompatibility(CompatibilityLevel.NoNeedForSync, VersionStrictness.DifferentModVersionsAreOk)]
+
     public class BossItemDrop : BaseUnityPlugin
     {
+        public const string ModVer = "1.2.2";
+        public const string ModName = "BossItemDrop";
+        public const string ModGuid = "com.sheen.BossItemDrop";
+
         // configurable stuff
         public static ConfigEntry<float> baseDropChance { get; set; }
         public static ConfigEntry<bool> eliteMultChance { get; set; }
@@ -25,6 +34,7 @@ namespace BossItemDrop
         public static ConfigEntry<bool> allowExtraAspectDrops { get; set; }
         public static ConfigEntry<bool> onlyDropWithSacrifice { get; set; }
         public static ConfigEntry<bool> useSacrificeDropChance { get; set; }
+        public static ConfigEntry<bool> useLuck { get; set; }
 
         public void Awake()
         {
@@ -70,6 +80,12 @@ namespace BossItemDrop
                 "useSacrificeDropChance",
                 false,
                 "If enabled, all drop chance calculation will be ignored, and the drop rates for enemies while using sacrifice will be used instead."
+                );
+            useLuck = Config.Bind<bool>(
+                "Drop Chances",
+                "useLuck",
+                false,
+                "Determines if luck is used to reroll drops."
                 );
             dropFromTeleBoss = Config.Bind<bool>(
                 "Drop Logistics",
@@ -208,7 +224,16 @@ namespace BossItemDrop
                 }
             }
 
-            bool doDrop = Util.CheckRoll(dropChance, killerMaster);
+            // checking if luck is used
+            bool doDrop = false;
+            if (useLuck.Value)
+            {
+                doDrop = Util.CheckRoll(dropChance, killerMaster);
+            }
+            else
+            {
+                doDrop = Util.CheckRoll(dropChance);
+            }
 
             if (doDrop)
             {
